@@ -1,4 +1,10 @@
 libvendor_sources = files('''
+    argon2/core.c
+    argon2/thread.c
+    argon2/opt.c
+    argon2/encoding.c
+    argon2/blake2b.c
+    argon2/argon2.c
     skein3fish/skein.c
     skein3fish/skeinApi.c
     skein3fish/skeinBlockNo3F.c

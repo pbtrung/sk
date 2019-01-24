@@ -415,6 +415,9 @@ defined(__ppc64__) || defined(__aarch64__)
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
+#ifndef __USE_MISC
+#define __USE_MISC
+#endif
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
 #endif
@@ -4574,7 +4577,7 @@ isize zpl_virtual_memory_page_size(isize *alignment_out) {
 }
 
 #else
-
+    
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
 #endif
