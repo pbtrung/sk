@@ -1,4 +1,5 @@
 libvendor_sources = files('''
+    sqlite3/sqlite3.c
     argon2/core.c
     argon2/thread.c
     argon2/opt.c
