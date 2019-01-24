@@ -3,6 +3,7 @@
 #define STB_LIB_IMPLEMENTATION
 #include "stb_lib.h"
 
+#include "argparse/argparse.h"
 #include "argon2/argon2.h"
 
 int main(int argc, char **argv) {
