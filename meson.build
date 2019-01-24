@@ -31,6 +31,7 @@ c_args = '''
     -DSQLITE_ENABLE_FTS5
     -DSQLITE_ENABLE_JSON1
     -DSQLITE_ENABLE_RTREE
+    -DSQLITE_ENABLE_DESERIALIZE
 '''.split()
 
 foreach arg: c_args
