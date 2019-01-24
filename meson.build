@@ -46,7 +46,7 @@ threads = dependency('threads')
 dl = cc.find_library('dl', required: true)
 m = cc.find_library('m', required: true)
 
-inc_dir = include_directories(['src/vendor'])
+inc_dir = include_directories(['src', 'src/vendor'])
 
 subdir('src')
 subdir('tests')
@@ -58,3 +58,9 @@ executable('sk', sk_sources,
 		   dependencies : dependencies,
            install : false,
 		   include_directories : inc_dir)
+
+executable('test_sk', sk_test_sources,
+           link_with : [libsk, libvendor],
+           dependencies : dependencies,
+           install : false,
+           include_directories : inc_dir)

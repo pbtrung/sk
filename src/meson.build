@@ -1,4 +1,6 @@
 libsk_sources = files('''
+	crypto.c
+	utils.c
 '''.split())
 
 libsk = static_library('sk',
