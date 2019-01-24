@@ -3,6 +3,13 @@
 #define ZPL_IMPLEMENTATION
 #include "zpl.h"
 
+#include "argon2/argon2.h"
+
+#define PWD_LEN 256
+#define SALT_LEN 32
+#define PWD_FILE_SIZE (PWD_LEN + SALT_LEN)
+#define HASH_LEN 128
+
 char *sk_read_line(void) {
     char *line = NULL;
     size_t buf_size = 0;
@@ -133,22 +140,60 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     i64 file_size = zpl_file_size(&pwd_file);
-    if (file_size < 256) {
-        printf("Error: Password file is too small. File size of at least 256 "
-               "bytes is required.\n");
+    if (file_size != PWD_FILE_SIZE) {
+        printf("Error: File size must be 288 bytes\n");
         return EXIT_FAILURE;
     }
-    unsigned char *fc = sodium_malloc(file_size);
+    unsigned char *fc = sodium_malloc(PWD_FILE_SIZE);
     if (fc == NULL) {
         printf("Error: Cannot allocate memory.\n");
         return EXIT_FAILURE;
     }
-    rc = zpl_file_read(&pwd_file, fc, file_size);
+    rc = zpl_file_read(&pwd_file, fc, PWD_FILE_SIZE);
     if (rc == false) {
         printf("Error: Cannot read file.\n");
         return EXIT_FAILURE;
     }
     zpl_file_close(&pwd_file);
+    
+    unsigned char *pwd = sodium_malloc(PWD_LEN);
+    if (pwd == NULL) {
+        printf("Error: Cannot allocate memory.\n");
+        exit(EXIT_FAILURE);
+    }
+    unsigned char *salt = sodium_malloc(SALT_LEN);
+    if (salt == NULL) {
+        printf("Error: Cannot allocate memory.\n");
+        exit(EXIT_FAILURE);
+    }
+    unsigned char *hash = sodium_malloc(HASH_LEN);
+    if (hash == NULL) {
+        printf("Error: Cannot allocate memory.\n");
+        exit(EXIT_FAILURE);
+    }
+    memcpy(pwd, fc, PWD_LEN);
+    memcpy(salt, &fc[PWD_LEN], SALT_LEN);
+    sodium_memzero(fc, PWD_FILE_SIZE);
+    sodium_free(fc);
+    
+    uint32_t t = 8;
+    uint32_t m = (1 << 18);
+    uint32_t p = 1;
+    
+    printf("Hashing password ");
+    fflush(stdout);
+    f64 time = zpl_time_now();
+    int ag2_rc = argon2id_hash_raw(t, m, p, pwd, PWD_LEN, salt, SALT_LEN, hash, HASH_LEN);
+    f64 delta = zpl_time_now() - time;
+    printf("needs %f second(s).\n\n", delta);
+    if (ag2_rc != ARGON2_OK) {
+        printf("Error: Cannot derive password using Argon2.\n");
+        exit(EXIT_FAILURE);
+    }
+    sodium_memzero(pwd, PWD_LEN);
+    sodium_free(pwd);
+    sodium_memzero(salt, SALT_LEN);
+    sodium_free(salt);
 
     char *line = NULL;
     char **args = NULL;
@@ -164,8 +209,7 @@ int main(int argc, char **argv) {
         free(line);
         free(args);
     } while (status);
-
-    sodium_free(fc);
+    
     zpl_opts_free(&opts);
 
     return EXIT_SUCCESS;
