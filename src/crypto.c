@@ -1,7 +1,29 @@
 #include "crypto.h"
 #include "skein3fish/skeinApi.h"
 #include "skein3fish/threefishApi.h"
+#include "argon2/argon2.h"
 #include "stb_lib.h"
+
+void sk_make_key(sk_key_t *key_x, const unsigned char *const key, size_t key_len, const unsigned char *const salt, size_t salt_len, int key_type) {
+    unsigned char *enc_key = (unsigned char *)sk_malloc(TOTAL_KEY_LEN);
+    
+    int rc = ARGON2_OK;
+    if (key_type == 1) {
+        rc = argon2id_hash_raw(X_T, X_M, X_P, key, key_len, salt, salt_len, enc_key, TOTAL_KEY_LEN);
+    } else if (key_type == 2) {
+        rc = argon2id_hash_raw(Y_T, Y_M, Y_P, key, key_len, salt, salt_len, enc_key, TOTAL_KEY_LEN);
+    }
+    
+    if (rc != ARGON2_OK) {
+        stb_fatal("cannot derive key(s) using Argon2.");
+    }
+    memcpy(key_x->t3f_enc_key, enc_key, T3F_KEY_LEN);
+    memcpy(key_x->t3f_tweak, &enc_key[T3F_KEY_LEN], T3F_TWEAK_LEN);
+    memcpy(key_x->hmac_key, &enc_key[T3F_KEY_LEN + T3F_TWEAK_LEN], SKEIN_HMAC_KEY_LEN);
+    memcpy(key_x->ctr_key, &enc_key[T3F_KEY_LEN + T3F_TWEAK_LEN + SKEIN_HMAC_KEY_LEN], crypto_stream_xchacha20_KEYBYTES);
+    memcpy(key_x->ctr_nonce, &enc_key[T3F_KEY_LEN + T3F_TWEAK_LEN + SKEIN_HMAC_KEY_LEN + crypto_stream_xchacha20_KEYBYTES], crypto_stream_xchacha20_NONCEBYTES);
+    free(enc_key);
+}
 
 void sk_hmac(const unsigned char *const input, size_t in_len,
              unsigned char *output, const unsigned char *const hmac_key) {

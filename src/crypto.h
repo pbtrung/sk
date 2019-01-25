@@ -13,6 +13,9 @@ struct sk_key_t {
     unsigned char ctr_nonce[crypto_stream_xchacha20_NONCEBYTES];
 };
 typedef struct sk_key_t sk_key_t;
+#define TOTAL_KEY_LEN (T3F_KEY_LEN + T3F_TWEAK_LEN + SKEIN_HMAC_KEY_LEN + crypto_stream_xchacha20_KEYBYTES + crypto_stream_xchacha20_NONCEBYTES)
+
+void sk_make_key(sk_key_t *key_x, const unsigned char *const key, size_t key_len, const unsigned char *const salt, size_t salt_len, int key_type);
 
 void sk_encrypt(const unsigned char *const input, size_t in_len,
                 unsigned char *output, sk_key_t *keys);

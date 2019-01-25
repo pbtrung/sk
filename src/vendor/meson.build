@@ -1,4 +1,5 @@
 libvendor_sources = files('''
+    lz4/lz4.c
     argparse/argparse.c
     sqlite3/sqlite3.c
     argon2/core.c
