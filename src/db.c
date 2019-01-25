@@ -1,6 +1,8 @@
 #include "db.h"
+#include "utils.h"
 #include "crypto.h"
 #include "argon2/argon2.h"
+#include "lz4/lz4.h"
 #include "stb_lib.h"
 
 sqlite3 *sk_create_db() {
@@ -54,7 +56,7 @@ void sk_encrypt_db(unsigned char *fc, sqlite3 *db, const char *path, int path_ty
     sk_hmac(enc_pass_key, PASS_KEY_LEN, hmac_pass_key, y_key->hmac_key);
     
     sqlite3_stmt *stmt = NULL;
-    rc = sqlite3_prepare_v2(db, "INSERT INTO keys(id, version, y_salt, ciphertext, hmac VALUES(1, 1, ?, ?, ?)", -1, &stmt, NULL);
+    rc = sqlite3_prepare_v2(db, "INSERT INTO keys(id, version, y_salt, ciphertext, hmac) VALUES(1, 1, ?, ?, ?)", -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         stb_fatal("SQL error: %s\n", sqlite3_errmsg(db));
     }
@@ -81,6 +83,24 @@ void sk_encrypt_db(unsigned char *fc, sqlite3 *db, const char *path, int path_ty
     if (db_buf == NULL) {
         stb_fatal("cannot serialize database.");
     }
+
+    size_t max_compressed_size = LZ4_compressBound(db_buf_size);
+    unsigned char *compressed_buf = (unsigned char *)sk_malloc(max_compressed_size);
+    uint64_t compressed_size = LZ4_compress_default(db_buf, (char *)compressed_buf, db_buf_size, max_compressed_size);
+    printf("db_buf_size: %ld\n", db_buf_size);
+    printf("compressed_size: %ld\n", compressed_size);
+
+    unsigned char *enc_db_buf = (unsigned char *)sk_malloc(compressed_size);
+    unsigned char *hmac_enc_db = (unsigned char *)sk_malloc(SKEIN_HMAC_LEN);
+    sk_encrypt(compressed_buf, compressed_size, enc_db_buf, x_key);
+    sk_hmac(enc_db_buf, compressed_size, hmac_enc_db, x_key->hmac_key);
+    FILE *enc_db = sk_fopen(path, "wb");
+    unsigned char header[4] = {'s', 'k', '0', '1'};
+    fwrite(header, 1, 4, enc_db);
+    fwrite(x_salt, 1, X_SALT_LEN, enc_db);
+    fwrite(hmac_enc_db, 1, SKEIN_HMAC_LEN, enc_db);
+    fwrite(enc_db_buf, 1, compressed_size, enc_db);
+    fclose(enc_db);
     
     sqlite3_free(db_buf);
     free(xy_enc_key);
@@ -92,4 +112,3 @@ void sk_encrypt_db(unsigned char *fc, sqlite3 *db, const char *path, int path_ty
     free(enc_pass_key);
     free(hmac_pass_key);
 }
-

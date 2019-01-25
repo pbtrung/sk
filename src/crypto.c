@@ -1,4 +1,5 @@
 #include "crypto.h"
+#include "utils.h"
 #include "skein3fish/skeinApi.h"
 #include "skein3fish/threefishApi.h"
 #include "argon2/argon2.h"
@@ -6,7 +7,7 @@
 
 void sk_make_key(sk_key_t *key_x, const unsigned char *const key, size_t key_len, const unsigned char *const salt, size_t salt_len, int key_type) {
     unsigned char *enc_key = (unsigned char *)sk_malloc(TOTAL_KEY_LEN);
-    
+
     int rc = ARGON2_OK;
     if (key_type == 1) {
         rc = argon2id_hash_raw(X_T, X_M, X_P, key, key_len, salt, salt_len, enc_key, TOTAL_KEY_LEN);
@@ -32,7 +33,7 @@ void sk_hmac(const unsigned char *const input, size_t in_len,
     assert(output != NULL);
     assert(hmac_key != NULL);
 
-    SkeinCtx_t *skein_x = (SkeinCtx_t *)sk_malloc(sizeof(SkeinCtx_t));
+    SkeinCtx_t *skein_x = (SkeinCtx_t *)malloc(sizeof(SkeinCtx_t));
 
     int rc = skeinCtxPrepare(skein_x, Skein512);
     if (rc != SKEIN_SUCCESS) {
@@ -60,13 +61,13 @@ void sk_encrypt(const unsigned char *const input, size_t in_len,
     assert(output != NULL);
     assert(keys != NULL);
 
-    ThreefishKey_t *t3f_x = (ThreefishKey_t *)sk_malloc(sizeof(ThreefishKey_t));
+    ThreefishKey_t *t3f_x = (ThreefishKey_t *)malloc(sizeof(ThreefishKey_t));
     threefishSetKey(t3f_x, Threefish1024, (uint64_t *)keys->t3f_enc_key, (uint64_t *)keys->t3f_tweak);
 
-    unsigned char *t3f_buf = (unsigned char *)sk_malloc(T3F_BLOCK_LEN);
+    unsigned char *t3f_buf = (unsigned char *)malloc(T3F_BLOCK_LEN);
     size_t num_blocks = in_len/T3F_BLOCK_LEN + (in_len % T3F_BLOCK_LEN != 0);
     size_t ctr_buf_size = num_blocks * T3F_BLOCK_LEN;
-    unsigned char *ctr_buf = (unsigned char *)sk_malloc(ctr_buf_size);
+    unsigned char *ctr_buf = (unsigned char *)malloc(ctr_buf_size);
     sodium_memzero(ctr_buf, ctr_buf_size);
     int rc = crypto_stream_xchacha20_xor(ctr_buf, ctr_buf, ctr_buf_size,
                                          keys->ctr_nonce, keys->ctr_key);

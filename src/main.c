@@ -2,7 +2,6 @@
 #include "stb_lib.h"
 
 #include "argparse/argparse.h"
-#include "argon2/argon2.h"
 #include "sqlite3/sqlite3.h"
 #include "utils.h"
 #include "db.h"
