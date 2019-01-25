@@ -6,7 +6,9 @@
 
 #define X_PWD_LEN 256
 #define X_SALT_LEN 32
-#define PWD_FILE_SIZE (X_PWD_LEN + X_SALT_LEN)
+#define Y_PWD_LEN 256
+#define Y_SALT_LEN 32
+#define PWD_FILE_SIZE (X_PWD_LEN + X_SALT_LEN + Y_PWD_LEN + Y_SALT_LEN)
 
 #define X_T 8
 #define X_M (1 << 18)
@@ -16,8 +18,6 @@
 #define Y_P 1
 #define X_ENC_KEY_LEN 256
 #define Y_ENC_KEY_LEN 256
-#define Y_SALT_LEN 32
-#define XY_ENC_KEY_LEN (X_ENC_KEY_LEN + Y_ENC_KEY_LEN)
 #define PASS_KEY_LEN (Y_ENC_KEY_LEN + crypto_stream_xchacha20_KEYBYTES + crypto_stream_xchacha20_NONCEBYTES)
 
 #define T3F_KEY_LEN 128

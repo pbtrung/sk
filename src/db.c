@@ -31,8 +31,13 @@ sqlite3 *sk_create_db() {
 
 void sk_encrypt_db(unsigned char *fc, sqlite3 *db, const char *path, int path_type) {
        
-    unsigned char *xy_enc_key = (unsigned char *)sk_malloc(XY_ENC_KEY_LEN);
-    int rc = argon2id_hash_raw(X_T, X_M, X_P, fc, X_PWD_LEN, &fc[X_PWD_LEN], X_SALT_LEN, xy_enc_key, XY_ENC_KEY_LEN);
+    unsigned char *x_enc_key = (unsigned char *)sk_malloc(X_ENC_KEY_LEN);
+    int rc = argon2id_hash_raw(X_T, X_M, X_P, fc, X_PWD_LEN, &fc[X_PWD_LEN], X_SALT_LEN, x_enc_key, X_ENC_KEY_LEN);
+    if (rc != ARGON2_OK) {
+        stb_fatal("cannot derive key(s) using Argon2.");
+    }
+    unsigned char *y_enc_key = (unsigned char *)sk_malloc(Y_ENC_KEY_LEN);
+    rc = argon2id_hash_raw(Y_T, Y_M, Y_P, &fc[X_PWD_LEN + X_SALT_LEN], Y_PWD_LEN, &fc[X_PWD_LEN + X_SALT_LEN + Y_PWD_LEN], Y_SALT_LEN, y_enc_key, Y_ENC_KEY_LEN);
     if (rc != ARGON2_OK) {
         stb_fatal("cannot derive key(s) using Argon2.");
     }
@@ -40,12 +45,12 @@ void sk_encrypt_db(unsigned char *fc, sqlite3 *db, const char *path, int path_ty
     unsigned char *x_salt = (unsigned char *)sk_malloc(X_SALT_LEN);
     randombytes_buf(x_salt, X_SALT_LEN);
     sk_key_t *x_key = (sk_key_t *)sk_malloc(sizeof(sk_key_t));
-    sk_make_key(x_key, xy_enc_key, X_ENC_KEY_LEN, x_salt, X_SALT_LEN, 1);
+    sk_make_key(x_key, x_enc_key, X_ENC_KEY_LEN, x_salt, X_SALT_LEN, 1);
     
     unsigned char *y_salt = (unsigned char *)sk_malloc(Y_SALT_LEN);
     randombytes_buf(y_salt, Y_SALT_LEN);
     sk_key_t *y_key = (sk_key_t *)sk_malloc(sizeof(sk_key_t));
-    sk_make_key(y_key, &xy_enc_key[X_ENC_KEY_LEN], Y_ENC_KEY_LEN, y_salt, Y_SALT_LEN, 2);
+    sk_make_key(y_key, y_enc_key, Y_ENC_KEY_LEN, y_salt, Y_SALT_LEN, 2);
     
     unsigned char *pass_key = (unsigned char *)sk_malloc(PASS_KEY_LEN);
     randombytes_buf(pass_key, PASS_KEY_LEN);
@@ -103,7 +108,8 @@ void sk_encrypt_db(unsigned char *fc, sqlite3 *db, const char *path, int path_ty
     fclose(enc_db);
     
     sqlite3_free(db_buf);
-    free(xy_enc_key);
+    free(x_enc_key);
+    free(y_enc_key);
     free(x_key);
     free(y_key);
     free(x_salt);
@@ -111,4 +117,7 @@ void sk_encrypt_db(unsigned char *fc, sqlite3 *db, const char *path, int path_ty
     free(pass_key);
     free(enc_pass_key);
     free(hmac_pass_key);
+    free(enc_db_buf);
+    free(compressed_buf);
+    free(hmac_enc_db);
 }
